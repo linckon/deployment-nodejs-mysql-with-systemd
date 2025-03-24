@@ -4,7 +4,7 @@
 [![MySQL](https://img.shields.io/badge/MySQL-8.0+-blue.svg)](https://www.mysql.com/)
 [![systemd](https://img.shields.io/badge/systemd-enabled-red.svg)](https://systemd.io/)
 
-A production-ready deployment solution for Node.js REST APIs with MySQL integration using systemd for service management.
+Hands-on Project:Deploying a Node.js Application with MySQL using systemd.
 
 ## 📋 Features
 
@@ -17,21 +17,21 @@ A production-ready deployment solution for Node.js REST APIs with MySQL integrat
 
 1. Clone this repository
 2. Follow the installation steps in the [Installation](#installation) section
-3. Test your deployment with the provided commands
+3. Test the deployment with the provided commands
 
 ## 📦 Prerequisites
 
 - Linux server (Ubuntu/Debian recommended)
-- Node.js v14 or higher
-- MySQL Server 8.0+
+- Node.js v22.14.0
+- MySQL Server
 - sudo access for service configuration
 
 ## 🔧 Installation
 
-## 1. Application Setup
+### 1. Application Setup
 
 
-bash
+```bash
 ### Create and navigate to project directory
 mkdir -p ~/practice_app
 cd ~/practice_app
@@ -41,6 +41,8 @@ npm init -y
 
 ### Install dependencies
 npm install express mysql2
+
+```
 
 ### Create Application Code
 
@@ -93,68 +95,184 @@ app.listen(port, () => {
 
 ### 2. Database Configuration
 
-bash
-# Install MySQL (if not already installed)
+```bash
+
 sudo apt update
 sudo apt install mysql-server
 
-# Secure MySQL installation
+# Secure the MySQL installation
 sudo mysql_secure_installation
 
-# Create database and user (see detailed instructions in guide)
+```
+## Configure Database
+
+### Access MySQL and set up the database:
+
+```sql
+
+-- Login to MySQL
+sudo mysql
+
+-- Create database
+CREATE DATABASE practice_app;
+
+-- Create application user
+CREATE USER 'app_user'@'localhost' IDENTIFIED BY 'app_password';
+GRANT ALL PRIVILEGES ON practice_app.* TO 'app_user'@'localhost';
+FLUSH PRIVILEGES;
+
+-- Switch to the application database
+USE practice_app;
+
+-- Create users table
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- Insert sample data
+INSERT INTO users (name, email) VALUES 
+  ('John Doe', 'john@example.com'),
+  ('Jane Smith', 'jane@example.com'),
+  ('Bob Johnson', 'bob@example.com');
+
+EXIT;
+
+```
+
+## 3. Systemd Configuration
+
+### Create Dedicated System User
+```bash
+# Create non-privileged user for running the application
+sudo useradd -r -s /bin/false app_user
+```
+
+### Deploy Application
+
+```bash
+# Create application directory
+sudo mkdir -p /opt/practice_app
+
+# Copy application files
+sudo cp -r ~/practice_app/* /opt/practice_app/
+
+# Set proper ownership
+sudo chown -R app_user:app_user /opt/practice_app
+```
+### Create Systemd Service file
+
+```bash
+sudo vim /etc/systemd/system/practice-app.service
+
+```
+
+```ini
+[Unit]
+Description=Node.js Practice Application
+After=network.target mysql.service
+Requires=mysql.service
+
+[Service]
+Type=simple
+User=app_user
+WorkingDirectory=/opt/practice_app
+ExecStart=/usr/local/bin/node22 /opt/practice_app/app.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=practice-app
+Environment=NODE_ENV=dev
+
+# Security measures
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
+```
 
 
-### 3. Systemd Service Setup
+### Enable and start service
 
-bash
-# Create service file
-sudo nano /etc/systemd/system/practice-app.service
+``` bash
+# Reload systemd to recognize new service
+sudo systemctl daemon-reload
 
-# Enable and start service
+# Enable service to start at boot
 sudo systemctl enable practice-app.service
+
+# Start the service
 sudo systemctl start practice-app.service
 
+```
 
-## 📝 Usage
 
-### API Endpoints
+## 📝 Usage and Testing
 
-- `GET /health` - Check application and database health
-- `GET /users` - Retrieve list of users from database
+### Verify Service Status
 
-### Service Management
-
-bash
-# Check service status
+```bash
+# Check if service is running
 sudo systemctl status practice-app.service
 
-# Restart service
-sudo systemctl restart practice-app.service
+```
 
-# View logs
+### Test API Endpoints
+
+```bash
+# Test health endpoint
+curl http://localhost:3000/health
+
+```
+
+```bash
+# Test users endpoint
+curl http://localhost:3000/users
+
+```
+
+### Test Crash Recovery
+
+```bash
+# Force kill the service
+sudo systemctl kill -s SIGKILL practice-app.service
+
+# Wait for restart
+sleep 10
+
+```
+
+### View Application Logs
+
+```bash
+# View service logs
 sudo journalctl -u practice-app.service
 
+# Follow logs in real-time
+sudo journalctl -u practice-app.service -f
 
-## 🔍 Troubleshooting
+```
 
-Common issues and solutions:
+```bash
+# Verify service recovered
+sudo systemctl status practice-app.service
 
-- **Database Connection Errors**: Verify MySQL is running and credentials are correct
-- **Service Won't Start**: Check logs for errors and verify file permissions
-- **API Not Accessible**: Confirm port availability and firewall settings
+```
 
-## 🔒 Security Considerations
+### Test Automatic Startup
 
-- Runs as dedicated non-privileged user
-- Implements systemd security features (ProtectSystem, PrivateTmp, etc.)
-- Uses connection pooling for database access
+```bash
+# Reboot system
+sudo reboot
 
-## 📚 Additional Resources
+# After reboot, verify service is running
+sudo systemctl status practice-app.service
 
-- [Node.js Documentation](https://nodejs.org/en/docs/)
-- [MySQL Documentation](https://dev.mysql.com/doc/)
-- [systemd Documentation](https://systemd.io/)
+```
 
-## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
