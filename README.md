@@ -222,19 +222,22 @@ sudo systemctl status practice-app.service
 
 ```
 
+![running-status](https://github.com/user-attachments/assets/d3497c45-6a47-4c24-9ef6-debbbccd7621)
+
 ### Test API Endpoints
 
 ```bash
 # Test health endpoint
 curl http://localhost:3000/health
-
 ```
+![health](https://github.com/user-attachments/assets/9544fb93-0586-497e-b636-70aa36f024a3)
+
 
 ```bash
 # Test users endpoint
 curl http://localhost:3000/users
-
 ```
+![user](https://github.com/user-attachments/assets/f76a5455-a4df-40c8-a124-5e25d8547087)
 
 ### Test Crash Recovery
 
@@ -244,7 +247,6 @@ sudo systemctl kill -s SIGKILL practice-app.service
 
 # Wait for restart
 sleep 10
-
 ```
 
 ### View Application Logs
@@ -255,14 +257,13 @@ sudo journalctl -u practice-app.service
 
 # Follow logs in real-time
 sudo journalctl -u practice-app.service -f
-
 ```
 
 ```bash
 # Verify service recovered
 sudo systemctl status practice-app.service
-
 ```
+![final](https://github.com/user-attachments/assets/e2bd262a-ea23-49ac-8796-852199928f66)
 
 ### Test Automatic Startup
 
@@ -272,7 +273,7 @@ sudo reboot
 
 # After reboot, verify service is running
 sudo systemctl status practice-app.service
-
 ```
+![after-reboot-status](https://github.com/user-attachments/assets/c8f37eb9-1d9f-4391-bd7d-1db9b930d2be)
 
 
